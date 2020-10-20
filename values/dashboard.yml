@@ -1,0 +1,47 @@
+---
+replicaCount: 1
+
+## Serve application over HTTP without TLS
+enableInsecureLogin: false
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 100Mi
+  requests:
+    cpu: 100m
+    memory: 100Mi
+
+ingress:
+  ## If true, Kubernetes Dashboard Ingress will be created.
+  ##
+  enabled: true
+  kubernetes.io/ingress.class: nginx
+  kubernetes.io/tls-acme: "true"
+  nginx.ingress.kubernetes.io/secure-backends: "true"
+  nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+
+  paths:
+    - /
+  hosts:
+    - dashboard.tiagoposse.com
+    - dashboard.192.168.178.48.xip.io
+
+  tls:
+    - secretName: kubernetes-dashboard-tls
+      hosts:
+        - dashboard.tiagoposse.com
+
+rbac:
+  create: false
+
+serviceAccount:
+  create: true
+  name: dashboard-sa
+
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 2001
+
+metricsScraper:
+  enabled: true

@@ -1,0 +1,17 @@
+roles:
+  drone:
+    namespaces: drone
+    sa: drone-sa
+    policies: drone-pol
+
+policies:
+  drone-pol:
+    file: drone.hcl
+
+# vault policy write drone-pol resources/drone/drone.hcl
+
+# vault write auth/kubernetes/role/drone \
+#     bound_service_account_names=drone-sa \
+#     bound_service_account_namespaces=drone \
+#     policies=drone-pol \
+#     ttl=1h

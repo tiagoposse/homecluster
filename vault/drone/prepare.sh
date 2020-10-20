@@ -1,0 +1,2 @@
+vault policy write drone-pol drone.hcl
+vault write auth/kubernetes/role/drone bound_service_account_names=default,drone-runner-drone-runner-kube bound_service_account_namespaces=drone,builds policies=drone-pol ttl=1h

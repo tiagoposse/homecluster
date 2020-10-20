@@ -1,0 +1,167 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: role-tokenreview-binding
+  namespace: tools
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: vault
+  namespace: tools
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-setup
+  namespace: tools
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: tools
+  name: vault-setup
+rules:
+- apiGroups: ["certificates.k8s.io"]
+  resources: ["certificatesigningrequests"]
+  verbs: ["get", "list", "watch", "create"]
+- apiGroups: ["certificates.k8s.io"]
+  resources: ["certificatesigningrequests/status"]
+  verbs: ["get"]
+- apiGroups: ["certificates.k8s.io"]
+  resources: ["certificatesigningrequests/approval"]
+  verbs: ["update"]
+- apiGroups: ["certificates.k8s.io"]
+  resources: ["signers"]
+  resourceNames:
+  - kubernetes.io/legacy-unknown
+  verbs: ["approve", "sign"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vault-setup-rb
+  namespace: tools
+subjects:
+- kind: ServiceAccount
+  name: vault-setup
+  namespace: tools
+roleRef:
+  kind: ClusterRole
+  name: vault-setup
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: tools
+  name: vault-setup
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list", "create"]
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["serviceaccounts"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-setup-rb
+  namespace: tools
+subjects:
+- kind: ServiceAccount
+  name: vault-setup
+  namespace: tools
+roleRef:
+  kind: Role
+  name: vault-setup
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-setup-config
+  namespace: tools
+data:
+  config.yml: |
+    kubernetes:
+      tokenPath: '/var/run/secrets/kubernetes.io/serviceaccount/token'
+      caPath: '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+      host: https://192.168.178.48:6443
+
+    vault:
+      scheme: https
+      addr: vault-internal.tools.svc:8200
+      caPath: '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+      init:
+        shares: 5
+        threshold: 3
+      replicas: 3
+      k8s:
+        saSecret: tools/vault
+      engines:
+        - type: pki
+          mount_path: pki
+        - type: kv
+          mount_path: kv
+      csr:
+        name: vault
+        common_name: vault
+        type: server
+        k8s_secret:
+          name: vault-tls
+          type: tls
+          translate:
+            cert: vault.crt
+            key: vault.key
+        signerName: kubernetes.io/kube-apiserver-client
+      initValues:
+        policies:
+          dyndns-pol:
+            path: kv/cloudflare
+          master:
+            path: *
+            capabilities: ["read", "list", "update", "create", "delete", "sudo" ]
+        roles:
+          dyndns:
+            service_accounts:
+              - dyndns-sa
+            namespaces:
+              - tools
+            policies:
+              - dyndns-pol
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-certificate-setup
+  namespace: tools
+spec:
+  template:
+    spec:
+      serviceAccount: vault-setup
+      containers:
+      - name: cluster-tool
+        image: cluster-tool:1.2.3
+        args:
+          - certificate
+        env:
+          - name: CONFIG_PATH
+            value: /configs/config.yml
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        volumeMounts:
+          - name: config
+            mountPath: /configs
+      volumes:
+        - name: config
+          configMap:
+            name: vault-setup-config
+      restartPolicy: Never
+  backoffLimit: 4

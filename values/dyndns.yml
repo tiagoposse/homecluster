@@ -1,0 +1,40 @@
+---
+image:
+  tag: 1.2.0
+
+externalIPv6Suffix: 169:178b:8f34:716d
+
+fritzbox:
+  address: http://192.168.178.1
+  interval: 120s
+  timeout: 10s
+
+cloudflare:
+  enabled: true
+  apiKeyPath: /vault/secrets/cloudflare
+  email: tiagoposse@gmail.com
+
+domain: tiagoposse.com
+records:
+  - name: tiagoposse.com
+    type: A
+  - name: vault.tiagoposse.com
+    type: A
+  - name: media.tiagoposse.com
+    type: A
+  - name: tiagoposse.com
+    type: AAAA
+  - name: vault.tiagoposse.com
+    type: AAAA
+  - name: media.tiagoposse.com
+    type: AAAA
+
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/agent-inject-secret-cloudflare: "kv/cloudflare"
+  vault.hashicorp.com/ca-cert: "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+  vault.hashicorp.com/agent-inject-template-cloudflare: |
+    {{- with secret "kv/cloudflare " -}}
+    {{ .Data.data.key }}
+    {{- end -}}
+  vault.hashicorp.com/role: dyndns

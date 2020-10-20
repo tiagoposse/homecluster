@@ -1,0 +1,23 @@
+fullnameOverride: ingress
+
+controller:
+  kind: DaemonSet
+  hostNetwork: true
+  config:
+    # hide Server header
+    server-tokens: "false"
+    use-forwarded-headers: "true"
+
+  service:
+    type: ClusterIP
+
+  image:
+    repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller-arm
+    digest: sha256:9f61cdb1cd1dd720be2ef1a69002ad92cd5dc25302c36cc806ff36889d5a8f6d
+    tag: 0.32.0
+
+  tcp:
+    9777: "media/kodi-svc:9777"
+
+rbac:
+  create: true
