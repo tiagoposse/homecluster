@@ -1,0 +1,6 @@
+---
+namespace: tools
+chart: kdash/kubernetes-dashboard
+valuesFiles:
+  - dashboard/values.yml
+version: 3.0.0

@@ -1,0 +1,11 @@
+namespace: tools
+chart: hashicorp/vault
+valuesFiles:
+  - values/vault.yml
+version: 0.8.0
+pre:
+  resources:
+    - resources/vault_pre.yml
+post:
+  resources:
+    - resources/vault_post.yml

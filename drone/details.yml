@@ -1,0 +1,12 @@
+---
+namespace: drone
+chart: tposse/drone
+valuesFiles:
+  - drone/values.yml
+version: 0.1.7
+pre:
+  resources:
+    - drone/k8s/pvc.yml
+post:
+  resources:
+    - drone/k8s/helm_auth.yml 

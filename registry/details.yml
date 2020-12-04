@@ -1,0 +1,6 @@
+---
+namespace: tools
+chart: stable/docker-registry
+valuesFiles:
+  - values/registry.yml
+version: 1.9.6

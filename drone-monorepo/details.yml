@@ -1,0 +1,6 @@
+---
+namespace: drone
+chart: tposse/drone-monorepo
+valuesFiles:
+  - values/drone-monorepo.yml
+version: 0.1.0

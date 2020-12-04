@@ -1,0 +1,60 @@
+image:
+  tag: latest
+
+env:
+  open:
+    # storage backend, can be one of: local, alibaba, amazon, google, microsoft, oracle
+    STORAGE: local
+    # absolute url for .tgzs in index.yaml
+    CHART_URL: https://charts.tiagoposse.com
+    # allow anonymous GET operations when auth is used
+    DISABLE_API: false
+
+service:
+  servicename:
+  type: ClusterIP
+  externalTrafficPolicy: Local
+  externalPort: 8080
+  nodePort:
+  annotations: {}
+  labels: {}
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 80m
+    memory: 64Mi
+
+serviceAccount:
+  create: false
+  # name:
+  ## Annotations for the Service Account
+  annotations: {}
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  labels: {}
+  path: /storage
+  storageClass: local-path-retain
+
+## Ingress for load balancer
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - name: charts.192.168.178.48.nip.io
+      path: /
+      tls: true
+    - name: charts.tiagoposse.com
+      path: /
+      tls: true
+      tlsSecret: chartmuseum-ingress-tls

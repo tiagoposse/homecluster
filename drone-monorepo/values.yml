@@ -1,0 +1,22 @@
+---
+image:
+  tag: 1.0.20
+
+token_path: /vault/secrets/token
+secret_path: /vault/secrets/secret
+
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/agent-status: injected
+  vault.hashicorp.com/ca-cert: /run/secrets/kubernetes.io/serviceaccount/ca.crt
+  vault.hashicorp.com/role: drone-monorepo
+  vault.hashicorp.com/agent-inject-secret-token: kv/data/drone/monorepo
+  vault.hashicorp.com/agent-inject-secret-secret: kv/data/drone/monorepo
+  vault.hashicorp.com/agent-inject-template-token: |
+    {{- with secret "kv/data/drone/monorepo" -}}
+    {{ .Data.data.github }}
+    {{- end -}}
+  vault.hashicorp.com/agent-inject-template-secret: |
+    {{- with secret "kv/data/drone/monorepo" -}}
+    {{ .Data.data.secret }}
+    {{- end -}}

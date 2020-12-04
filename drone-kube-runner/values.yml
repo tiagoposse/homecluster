@@ -15,16 +15,18 @@ securityContext:
   runAsUser: 1000
 
 ## Add extra annotations to the Kubernetes runner pods here.
-##
 podAnnotations:
   vault.hashicorp.com/agent-inject: "true"
   vault.hashicorp.com/agent-init-first: "true"
   vault.hashicorp.com/agent-status: injected
   vault.hashicorp.com/ca-cert: /run/secrets/kubernetes.io/serviceaccount/ca.crt
-  vault.hashicorp.com/role: drone
-  vault.hashicorp.com/agent-inject-secret-env-secrets: kv/data/drone/rpc
+  vault.hashicorp.com/role: drone-runner
+  vault.hashicorp.com/agent-inject-secret-env-secrets: kv/data/drone/rpc,kv/data/drone/vault
   vault.hashicorp.com/agent-inject-template-env-secrets: |
-    {{- with secret "kv/data/drone/rpc" -}}
+    {{- with secret "kv/data/drone/vault" -}}
+    DRONE_SECRET_PLUGIN_TOKEN={{ .Data.data.secret }}
+    {{- end -}}
+    {{- with secret "kv/data/drone/rpc" }}
     DRONE_RPC_SECRET={{ .Data.data.secret }}
     {{- end -}}
 
@@ -33,7 +35,8 @@ rbac:
     - builds
 
 env:
-  DRONE_RPC_SECRET: bea26a2221fd8090ea38720fc445eca6
   DRONE_RPC_HOST: drone.drone.svc.cluster.local
   DRONE_RPC_PROTO: http
   DRONE_NAMESPACE_DEFAULT: builds
+  DRONE_SERVICE_ACCOUNT_DEFAULT: drone-build-sa
+  # DRONE_SECRET_PLUGIN_ENDPOINT: http://drone-vault.drone.svc.cluster.local

@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drone-build-sa
+  namespace: builds
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: drone-build
+rules:
+- apiGroups: ["", "apps"]
+  resources: ["pods", "namespaces", "serviceAccount", "deployments", "statefulset", "persistentVolumeClaim", "secret"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: drone-build
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: drone-build
+subjects:
+- kind: ServiceAccount
+  name: drone-build-sa
+  namespace: builds

@@ -1,0 +1,6 @@
+---
+namespace: builds
+chart: tposse/drone-runner-kube
+valuesFiles:
+  - drone-kube-runner/values.yml
+version: 0.1.4

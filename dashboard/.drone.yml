@@ -1,0 +1,19 @@
+kind: pipeline
+type: kubernetes
+name: Deploy dashboard
+
+steps:
+  image: pelotech/drone-helm3
+  settings:
+    mode: upgrade
+    namespace: tools
+    add_repos:
+      kdash: https://kubernetes.github.io/dashboard
+    chart: kdash/kubernetes-dashboard
+    chart_version: 3.0.0
+    release: dashboard
+    values_files:
+      - values/dashboard.yml
+    api_server:
+      from_secret: cluster_server
+    kube_service_account: helm-sa

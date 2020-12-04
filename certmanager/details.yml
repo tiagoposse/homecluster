@@ -1,0 +1,9 @@
+---
+namespace: cert-manager
+chart: jetstack/cert-manager
+valuesFiles:
+  - values/vault.yml
+version: v1.0.4
+post:
+  resources:
+    - https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.crds.yaml

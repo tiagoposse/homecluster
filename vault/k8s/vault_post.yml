@@ -13,11 +13,7 @@ spec:
       - name: cluster-tool
         image: cluster-tool:1.2.3
         command:
-          - tail
-          - -f
-          - /dev/null
-        # args:
-        #   - setup
+          - setup
         env:
           - name: CONFIG_PATH
             value: /configs/config.yml

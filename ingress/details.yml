@@ -1,0 +1,10 @@
+---
+namespace: ingress
+chart: ingress-nginx
+valuesFiles:
+  - values/ingress.yml
+version: 3.7.1
+url: https://kubernetes.github.io/ingress-nginx
+pre:
+  resources:
+    - resources/reqs.yml

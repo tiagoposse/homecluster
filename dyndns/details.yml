@@ -1,0 +1,6 @@
+---
+namespace: tools
+chart: tposse/fritzbox-dyndns
+valuesFiles:
+  - values/dyndns.yml
+version: 0.2.0

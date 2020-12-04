@@ -1,0 +1,19 @@
+
+kind: Pipeline
+name: Deploy via helm
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+  - name: Deploy
+    image: registry.192.168.178.48.nip.io/kubernetes:1.0.1
+    commands:
+      - helm repo add release 
+      - helm install ${COMPONENT} `yq r ${COMPONENT}/details.yml "chart"` --repo=`yq r ${COMPONENT}/details.yml "url"`
+    settings:
+      server:
+        from_secret: kubernetes_server
+      token_path: /var/run/secrets/kubernetes.io/serviceaccount/token
+      ca_path: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
