@@ -1,6 +1,7 @@
 ---
 namespace: tools
 chart: stable/chartmuseum
-valuesFiles:
-  - museum/values.yml
+release: museum
+valuesFile: museum/values.yml
 version: 2.14.2
+url: https://chartmuseum.github.io/charts

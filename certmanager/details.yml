@@ -1,8 +1,9 @@
 ---
 namespace: cert-manager
 chart: jetstack/cert-manager
-valuesFiles:
-  - values/vault.yml
+valuesFile: certmanager/values.yml
+release: certmanager
+url: https://charts.jetstack.io
 version: v1.0.4
 post:
   resources:

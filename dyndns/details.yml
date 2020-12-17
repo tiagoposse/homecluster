@@ -1,6 +1,7 @@
 ---
 namespace: tools
-chart: tposse/fritzbox-dyndns
-valuesFiles:
-  - values/dyndns.yml
+chart: fritzbox-dyndns
+url: https://charts.tiagoposse.com
+valuesFile: dyndns/values.yml
+release: dyndns
 version: 0.2.0

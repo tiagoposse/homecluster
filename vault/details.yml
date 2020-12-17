@@ -1,7 +1,7 @@
 namespace: tools
-chart: hashicorp/vault
-valuesFiles:
-  - values/vault.yml
+chart: vault
+url: https://helm.releases.hashicorp.com
+valuesFile: vault/values.yml
 version: 0.8.0
 pre:
   resources:

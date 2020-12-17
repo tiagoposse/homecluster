@@ -1,8 +1,8 @@
 ---
 namespace: media
 chart: bananaspliff/emby
-valuesFiles:
-  - values/media.yml
+release: media
+valuesFile: values/media.yml
 version: 0.1.0
 pre:
   resources:

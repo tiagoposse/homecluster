@@ -1,71 +1,56 @@
 ---
-# include_pipeline: templates/helm_deploy.yml
-# when:
-#   paths:
-#     - ingress/**/*
+include_pipeline: templates/helm_deploy.yml
+when:
+  paths:
+    - ingress/**/*
 
-# environment:
-#   COMPONENT: ingress
 environment:
-  COMPONENT: ingress
-
-platform:
-  os: linux
-  arch: arm64
-
-kind: pipeline
-type: kubernetes
-name: Deploy via helm
-
-steps:
-- commands:
-  - cat $PLUGIN_CA_PATH
-  - > 
-    /usr/local/bin/helm-original install `echo $COMPONENT` `yq r $COMPONENT/details.yml "chart"`
-    --create-namespace
-    --repo=`yq r $COMPONENT/details.yml "url"`
-    -n `yq r $COMPONENT/details.yml "namespace"`
-    --kube-token=$(cat `echo $PLUGIN_TOKEN_PATH`)
-    --kube-apiserver=https://`echo $PLUGIN_SERVER:$PLUGIN_SERVER_PORT`
-    --insecure-skip-tls-verify
-    --ca-file=`echo $PLUGIN_CA_PATH`
-  image: registry.192.168.178.48.nip.io/kubernetes:2.0.3
-  name: Deploy
-  settings:
-    ca_path: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-    server: "192.168.178.48"
-    server_port: "6443"
-    token_path: /var/run/secrets/kubernetes.io/serviceaccount/token
+  PLUGIN_DETAILS_FILE: ingress/details.yml
 ---
-# include_pipeline: helm_deploy.yml
-# when:
-#   paths:
-#     - registry/**/*
-# ---
-# include_pipeline: helm_deploy.yml
-# when:
-#   paths:
-#     - certmanager/**/*
-# ---
-# include_pipeline: helm_deploy.yml
-# when:
-#   paths:
-#     - dashboard/**/*
-# ---
-# include_pipeline: helm_deploy.yml
-# when:
-#   paths:
-#     - museum/**/*
-# ---
-# include_pipeline: helm_deploy.yml
-# when:
-#   paths:
-#     - media/**/*
-# ---
-# include_pipeline: helm_deploy.yml
-# when:
-#   paths:
-#     - dyndns/**/*
+include_pipeline: templates/helm_deploy.yml
+when:
+  paths:
+    - registry/**/*
+
+environment:
+  PLUGIN_DETAILS_FILE: registry/details.yml
+---
+include_pipeline: certmanager/.drone.yml
+when:
+  paths:
+    - certmanager/**/*
+---
+include_pipeline: templates/helm_deploy.yml
+when:
+  paths:
+    - dashboard/**/*
+
+environment:
+  PLUGIN_DETAILS_FILE: dashboard/details.yml
+---
+include_pipeline: templates/helm_deploy.yml
+when:
+  paths:
+    - museum/**/*
+
+environment:
+  PLUGIN_DETAILS_FILE: museum/details.yml
+---
+include_pipeline: templates/helm_deploy.yml
+when:
+  paths:
+    - media/**/*
+
+environment:
+  PLUGIN_DETAILS_FILE: media/details.yml
+---
+include_pipeline: templates/helm_deploy.yml
+when:
+  paths:
+    - dyndns/**/*
+
+environment:
+  PLUGIN_DETAILS_FILE: dyndns/details.yml
 # ---
 # include_pipeline: drone/.drone.yml
 # when:

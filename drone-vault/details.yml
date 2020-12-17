@@ -1,5 +1,7 @@
+---
 namespace: drone
-chart: tposse/drone-monorepo
-valuesFile:
-  - values/drone-monorepo.yml
+chart: drone-vault
+release: drone-vault
+url: https://charts.tiagoposse.com
+valuesFile: drone-vault/values.yml
 version: 0.1.0
