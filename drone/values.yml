@@ -55,6 +55,7 @@ env:
   DRONE_SERVER_HOST: drone.tiagoposse.com
   DRONE_SERVER_PROTO: http
   DRONE_LOGS_DEBUG: "true"
+  DRONE_JSONNET_ENABLED: "true"
   # DRONE_TLS_CERT: /vault/secrets/cert.pem
   # DRONE_TLS_KEY: /vault/secrets/key.pem
   DRONE_CONVERT_PLUGIN_ENDPOINT: http://drone-monorepo.drone.svc:3000

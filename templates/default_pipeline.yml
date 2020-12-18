@@ -7,7 +7,16 @@ type: kubernetes
 name: Deploy via helm
 
 steps:
-- name: Deploy
+- name: Vault resources
+  image: registry.192.168.178.48.nip.io/vault-resources:1.0.0
+  settings:
+    vault_addr: ""
+  when:
+    paths:
+      include:
+        - <current_path>/vault.yml
+
+- name: Helm deploy
   image: registry.192.168.178.48.nip.io/helm-deploy:1.0.2
   settings:
     state: upgrade
@@ -15,3 +24,7 @@ steps:
     server: 192.168.178.48
     server_port: 6443
     token_path: /var/run/secrets/kubernetes.io/serviceaccount/token
+  when:
+    paths:
+      include:
+        - <current_path>/values.yml

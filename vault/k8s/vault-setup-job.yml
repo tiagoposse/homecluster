@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-setup
+  namespace: vault
+spec:
+  template:
+    spec:
+      serviceAccount: vault-setup
+      containers:
+      - name: cluster-tool
+        image: cluster-tool:1.2.3
+        command:
+          - setup
+        env:
+          - name: CONFIG_PATH
+            value: /configs/config.yml
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        volumeMounts:
+          - name: config
+            mountPath: /configs
+      restartPolicy: Never
+      volumes:
+        - name: config
+          configMap:
+            name: vault-setup-config
+  backoffLimit: 4

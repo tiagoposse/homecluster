@@ -1,6 +1,6 @@
 ---
 image:
-  tag: 1.0.20
+  tag: 1.0.3
 
 token_path: /vault/secrets/token
 secret_path: /vault/secrets/secret

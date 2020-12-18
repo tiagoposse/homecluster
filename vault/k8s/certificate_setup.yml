@@ -1,10 +1,9 @@
-
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: vault-setup
-  namespace: tools
+  name: vault-certificate-setup
+  namespace: vault
 spec:
   template:
     spec:
@@ -12,8 +11,8 @@ spec:
       containers:
       - name: cluster-tool
         image: cluster-tool:1.2.3
-        command:
-          - setup
+        args:
+          - certificate
         env:
           - name: CONFIG_PATH
             value: /configs/config.yml
@@ -24,9 +23,9 @@ spec:
         volumeMounts:
           - name: config
             mountPath: /configs
-      restartPolicy: Never
       volumes:
         - name: config
           configMap:
             name: vault-setup-config
+      restartPolicy: Never
   backoffLimit: 4

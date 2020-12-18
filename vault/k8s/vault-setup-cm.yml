@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-setup-config
+  namespace: vault
+data:
+  config.yml: |
+    kubernetes:
+      tokenPath: '/var/run/secrets/kubernetes.io/serviceaccount/token'
+      caPath: '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+      host: https://192.168.178.48:6443
+
+    vault:
+      scheme: https
+      addr: vault-internal.tools.svc:8200
+      caPath: '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+      init:
+        shares: 5
+        threshold: 3
+      replicas: 3
+      k8s:
+        saSecret: tools/vault
+      engines:
+        - type: pki
+          mount_path: pki
+        - type: kv
+          mount_path: kv
+      csr:
+        name: vault
+        common_name: vault
+        type: server
+        k8s_secret:
+          name: vault-tls
+          type: tls
+          translate:
+            cert: vault.crt
+            key: vault.key
+        signerName: kubernetes.io/kube-apiserver-client
+      initValues:
+        policies:
+          dyndns-pol:
+            path: kv/cloudflare
+          master:
+            path: *
+            capabilities: ["read", "list", "update", "create", "delete", "sudo" ]
+        roles:
+          dyndns:
+            service_accounts:
+              - dyndns-sa
+            namespaces:
+              - tools
+            policies:
+              - dyndns-pol
