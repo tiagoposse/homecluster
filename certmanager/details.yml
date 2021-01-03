@@ -1,10 +1,23 @@
----
-namespace: cert-manager
-chart: cert-manager
-release: certmanager
-url: https://charts.jetstack.io
-version: v1.0.4
+namespace: tools
+
 hooks:
-  postInstall:
+  preInstall:
     - operation: apply
-      resource: https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.crds.yaml
+      resource: k8s/roles.yml
+    - operation: vault
+
+vault:
+  roles:
+    - name: certmanager
+      namespaces: tools
+      sa: certmanager-sa
+      policies: certmanager
+
+  policies:
+    - certmanager
+
+  secrets:
+    - path: kv/cloudflare
+      values:
+        email: env_cloudflare_email
+        key: env_cloudflare_key

@@ -1,7 +1,25 @@
 ---
 namespace: tools
-chart: fritzbox-dyndns
-url: https://charts.tiagoposse.com
-valuesFile: dyndns/values.yml
-release: dyndns
-version: 0.2.0
+releases:
+  - chart: fritzbox-dyndns
+    url: https://charts.tiagoposse.com/charts
+    valuesFile: dyndns/values.yml
+    name: dyndns
+    version: 0.2.0
+hooks:
+  preInstall:
+    - operation: vault
+
+vault:
+  policies:
+    dyndns-pol:
+      path: kv/cloudflare
+
+  roles:
+    dyndns:
+      service_accounts:
+        - dyndns-sa
+      namespaces:
+        - tools
+      policies:
+        - dyndns-pol

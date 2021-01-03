@@ -1,0 +1,14 @@
+init:
+  shares: 5
+  threshold: 3
+engines:
+  - type: pki
+    mount_path: pki
+  - type: kv
+    mount_path: kv
+    options:
+      version: 2
+  - type: kubernetes
+    mount_path: kubernetes
+    address: https://192.168.178.48:6443
+    ca: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt

@@ -1,3 +1,3 @@
-path "kv/data/drone/monorepo" {
+path "kv/data/drone/github" {
   capabilities = ["read"]
 }

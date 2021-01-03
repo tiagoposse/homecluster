@@ -2,3 +2,4 @@ venv
 .helmsman-tmp
 __pycache__
 info
+.tmp

@@ -12,9 +12,12 @@ controller:
     type: ClusterIP
 
   image:
-    repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller-arm
-    digest: sha256:9f61cdb1cd1dd720be2ef1a69002ad92cd5dc25302c36cc806ff36889d5a8f6d
-    tag: 0.32.0
+    repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
+    digest: sha256:fc650620719e460df04043512ec4af146b7d9da163616960e58aceeaf4ea5ba1
+    tag: 0.33.0
+
+  extraArgs:
+    default-ssl-certificate: "ingress/tiagoposse-ingress"
 
   tcp:
     9777: "media/kodi-svc:9777"

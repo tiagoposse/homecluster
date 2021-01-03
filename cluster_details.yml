@@ -1,0 +1,4 @@
+cluster_ingress_secret: tiagoposse-ingress
+cluster_ingress_domains: tiagoposse.com,*.tiagoposse.com
+
+cluster_kubernetes_version: 1.18.10

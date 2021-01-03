@@ -6,7 +6,7 @@ env:
     # storage backend, can be one of: local, alibaba, amazon, google, microsoft, oracle
     STORAGE: local
     # absolute url for .tgzs in index.yaml
-    CHART_URL: https://charts.tiagoposse.com
+    CHART_URL: https://charts.192.168.178.48.xip.io
     # allow anonymous GET operations when auth is used
     DISABLE_API: false
 
@@ -51,7 +51,7 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
-    - name: charts.192.168.178.48.nip.io
+    - name: charts.192.168.178.48.xip.io
       path: /
       tls: true
     - name: charts.tiagoposse.com

@@ -1,7 +1,0 @@
----
-namespace: drone
-chart: drone-monorepo
-release: drone-monorepo
-url: https://charts.tiagoposse.com
-valuesFile: drone-monorepo/values.yml
-version: 0.1.0

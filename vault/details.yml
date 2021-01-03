@@ -2,11 +2,9 @@ namespace: vault
 release: vault
 chart: vault
 url: https://helm.releases.hashicorp.com
-valuesFile: vault/values.yml
+valuesFile: values.yml
 version: 0.8.0
 hooks:
   preInstall:
-    - resource: vault/k8s/auth-setup.yml
+    - resource: k8s/auth-setup.yml
       operation: apply
-    - resource: vault/resources/setup_certificate.sh
-      operation: execute

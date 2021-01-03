@@ -5,7 +5,6 @@ local components = [
   'drone',
   'drone-monorepo',
   'drone-runner-kube',
-  'drone-vault',
   'dyndns',
   'ingress',
   'museum',
@@ -16,45 +15,34 @@ local components = [
 
 local Pipeline(component) = {
   kind: "pipeline",
+  type: "kubernetes",
   name: "Deploy " + component + " via helm",
+  metadata: {
+    annotations: {
+      "autocert.step.sm/name": "drone-build"
+    }
+  },
   platform: {
     os: "linux",
     arch: "arm64"
   },
   trigger: {
     paths: [
-      component + "/**/*"
+      component + "/**/*.yml"
     ]
   },
   steps: [
     {
-      name: "vault resources",
-      image: "registry.192.168.178.48.nip.io/vault-resources:1.0.0",
+      name: "Create vault resources and deploy",
+      image: "registry.tiagoposse.com/cluster-droid:0.5.7",
       settings: {
-        vault_addr: ""
+        action: 'upgrade'
       },
-      when: {
-        paths: [
-          "**/*/" + component + "/vault.yml"
-        ]
-      }
-    },
-    {
-      name: "build",
-      image: "registry.192.168.178.48.nip.io/vault-resources:1.0.0",
-      settings: {
-        state: "upgrade",
-        ca_path: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-        server: "192.168.178.48",
-        server_port: "6443",
-        details_file: component + "details.yml",
-        token_path: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      environment: {
+        VAULT_ADDR: "https://vault.tiagoposse.com",
+        VAULT_CACERT: "/var/run/autocert.step.sm/root.crt",
+        DETAILS_PATH: component + "/details.yml"
       },
-      when: {
-        paths: [
-          "**/*/" + component + "/values.yml"
-        ]
-      }
     }
   ]
 };

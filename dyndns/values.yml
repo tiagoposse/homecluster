@@ -1,6 +1,6 @@
 ---
 image:
-  repository: registry.192.168.178.48.nip.io/dyndns
+  repository: registry.tiagoposse.com/dyndns
   tag: 1.3.0
 
 ipv6:

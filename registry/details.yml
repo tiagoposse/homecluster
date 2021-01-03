@@ -1,6 +1,8 @@
 ---
 namespace: tools
-chart: docker-registry
-url: https://charts.helm.sh/stable
-valuesFile: registry/values.yml
-version: 1.9.6
+releases:
+  - name: registry
+    chart: docker-registry
+    url: https://charts.helm.sh/stable
+    valuesFile: values.yml
+    version: 1.9.6

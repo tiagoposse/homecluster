@@ -1,91 +1,120 @@
+!/bin/sh
 
-install()
-{
-  echo """helm install $1 `yq r $1/details.yml "chart"` -f $1/values.yml -n `yq r $1/details.yml "namespace" ${2:""}`"""
-  helm install $1 `yq r $1/details.yml "chart"` -f $1/values.yml -n `yq r $1/details.yml "namespace" ${2:""}` --repo `yq r $1/details.yml "url"`
-}
+# echo "Insert github client id"
+# read github_client_id
 
-build()
-{
-  printf "drone repo enable $1\n"
-  drone repo enable $1
-  drone repo update --config ${2:".drone.jsonnet"} $1
-  drone build create $1
-}
+# echo "Insert github client secret"
+# read github_secret
 
-build_and_wait()
-{
-  build $1 $2
-  result=`drone build ls $1 --limit=1 | grep Status | cut -d " " -f 2`
+# echo "Insert cloudflare api secret"
+# read cloudflare
 
-  while [ "$result" != "success" ] && [ "$result" != "failure" ] && [ "$result" != "killed" ]
-  do
-    sleep 1m
-    printf "Not done yet.\n"
-    result=`drone build ls $1 --limit=1 | grep Status | cut -d " " -f 2`
-  done
-}
+github_client_id="$1"
+github_secret="$2"
+cloudflare="$3"
 
-repos()
-{
-  drone repo sync
+mkdir -p .tmp
 
-  DEFAULT_REPO=`yq r projects.yml "repository"`
+echo "cloudflare_api_key=$cloudflare\ncloudflare_api_email=tiagoposse@gmail.com" > .tmp/cloudflare
 
-  for project in `yq r projects.yml "repos.*" -p p`
-  do
-    name=`echo ${project} | cut -d "." -f 2`
-    repo=`yq r projects.yml "${project}.repository"`
-    repo="${repo:-$DEFAULT_REPO}"
+docker run -ti --rm -v `pwd`/.tmp:/tmp \
+  -v `pwd`/.tmp:/etc/letsencrypt/live/ \
+  certbot/dns-cloudflare:arm64v8-v1.11.0 \
+  certonly --dns-cloudflare \
+  --dns-cloudflare-credentials /tmp/cloudflare \
+  --dns-cloudflare-propagation-seconds 60 \
+  --agree-tos \
+  -m tiagoposse@gmail.com \
+  -n \
+  -d tiagoposse.com \
+  -d "*.tiagoposse.com"
 
-    if [ ! -z "`yq r projects.yml \"${project}.wait\"`" ]
-    then
-      build_and_wait ${repo}/${name}
-    else
-      build ${repo}/${name}
-    fi
-    
-    echo "done"
-  done
-}
+kubectl create secret tls tiagoposse-ingress -n `yq r registry/details.yml "namespace"` \
+    --key=.tmp/tiagoposse.com/privkey.pem --cert=.tmp/tiagoposse.com/fullchain.pem
 
-echo "Insert github client id"
-read github_client_id
+# install ingress
+helm install ingress `yq e ".chart" ingress/details.yml` -f ingress/values.yml \
+  -n `yq e ".namespace" registry/details.yml` --repo `yq e ".url" registry/details.yml` \
+  --create-namespace
 
-echo "Insert github client secret"
-read github_secret
+# install registry
+helm install registry `yq e ".chart" registry/details.yml` -f registry/values.yml \
+  -n `yq e ".namespace" registry/details.yml` --repo `yq e ".url" registry/details.yml` \
+  --create-namespace
 
-install ingress
-install registry
+# install vault
+helm install vault `yq e ".chart" vault/details.yml` -f vault/values.yml \
+  -n `yq e ".namespace" vault/details.yml` --create-namespace
 
-git clone https://github.com/drone/drone-kaniko.git /tmp/kaniko
-(cd /tmp/kaniko && GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GO111MODULE=on go build -v -a -tags netgo -o release/linux/arm64/kaniko-docker ./cmd/kaniko-docker)
-(cd /tmp/kaniko && docker build -t drone-kaniko . -f docker/docker/Dockerfile.linux.arm64)
-docker tag drone-kaniko registry.192.168.178.48.nip.io/drone-kaniko
-docker push registry.192.168.178.48.nip.io/drone-kaniko
+git clone https://github.com/tiagoposse/custom-charts.git .tmp/custom-charts
+git clone https://github.com/tiagoposse/helper-images.git .tmp/helper-images
+git clone https://github.com/tiagoposse/drone-monorepo.git .tmp/drone-monorepo
+docker build -t cluster-droid .tmp/helper-images/cluster-droid
 
-helm repo add drone https://charts.drone.io
-helm repo update
-RPC_SECRET=`openssl rand -base64 32`
-helm install drone drone/drone -f drone/pre-values.yml -n drone --create-namespace --set env.DRONE_GITHUB_CLIENT_ID=$github_client_id,env.DRONE_GITHUB_CLIENT_SECRET=$github_secret,env.DRONE_RPC_SECRET=$RPC_SECRET
-helm install drone-runner drone/drone-runner-kube -f drone-kube-runner/pre-values.yml -n builds --create-namespace --set env.DRONE_RPC_SECRET=$RPC_SECRET
+VERSION=$(cat .tmp/helper-images/cluster-droid/VERSION)
+docker buildx build -t cluster-droid:$VERSION .tmp/helper-images/cluster-droid \
+  --platform linux/arm64 \
+  --build-arg=VAULT_VERSION=1.6.1 \
+  --build-arg=HELM_VERSION=3.4.2 \
+  --build-arg=KUBECTL_VERSION=1.18.10
 
-printf "Insert drone token"
+docker tag cluster-droid:$VERSION registry.tiagoposse.com/cluster-droid:$VERSION
+docker push registry.tiagoposse.com/cluster-droid:$VERSION
+
+kubectl apply -f vault/setup-pod.yml
+
+kubectl wait --timeout=180s --for=condition=Completed -n vault vault-setup
+
+cp $KUBECONFIG .tmp/kubeconf
+echo """
+VAULT_TOKEN=/tmp/token
+VAULT_ADDR=https://vault.tiagoposse.com
+KUBECONFIG=/tmp/kubeconf""" > .tmp/docker-env
+
+docker run -ti --rm -v `pwd`/.tmp:/tmp -v `pwd`:/conf \
+  -e github_client_id=$github_client_id -e github_secret=$github_secret \
+  --env-file=.tmp/docker-env \
+  cluster-droid -a upgrade -d /conf/drone/details.yml --hooks=only-pre
+
+DRONE_NAMESPACE=`yq e ".namespace" drone/details.yml`
+docker run -ti --rm -v `pwd`/.tmp:/tmp -v `pwd`:/conf \
+  --env-file=.tmp/docker-env \
+  cluster-droid -a upgrade -d /conf/drone-runner/details.yml --hooks=only-pre
+
+# Install drone
+helm install drone .tmp/custom-charts/drone -f drone/values.yml -n $DRONE_NAMESPACE
+
+# Install drone-runner
+helm install drone-runner .tmp/custom-charts/drone-runner-kube -f drone-runner/values.yml -n $DRONE_NAMESPACE
+
+export VERSION=$(cat .tmp/drone-monorepo/code/VERSION)
+docker buildx build -t drone-monorepo:$VERSION .tmp/drone-monorepo/code \
+  --platform linux/arm64
+docker tag drone-monorepo:$VERSION registry.tiagoposse.com/drone-monorepo:$VERSION
+docker push registry.tiagoposse.com/drone-monorepo:$VERSION
+
+helm install -n $DRONE_NAMESPACE drone-monorepo .tmp/drone-monorepo/chart -f drone-monorepo/values.yml
+
+rm -rf .tmp
+sleep 5
+
+echo "Insert drone token, find it at drone.tiagoposse.com"
 read drone_token
+
 export DRONE_SERVER=https://drone.tiagoposse.com
 export DRONE_TOKEN=$drone_token
 
 # Initial run of homecluster
 drone repo sync
-drone orgsecret add tiagoposse drone_token $RPC_SECRET
-build_and_wait tiagoposse/helper-images
 
-build_and_wait tiagoposse/homecluster .init.jsonnet
+echo "Enabling helper-images"
+REPO="tiagoposse/helper-images"
+drone repo enable $REPO
+drone repo update --trusted --config .drone.jsonnet $REPO
+drone build create $REPO
 
-build tiagoposse/drone-monorepo
-# Re install
-helm uninstall -n drone drone
-helm uninstall -n builds drone-runner
-
-install drone-kube-runner
-install drone "--wait"
+echo "## Enabling homecluster"
+REPO="tiagoposse/homecluster"
+drone repo enable $REPO
+drone repo update $REPO --trusted --config .drone.jsonnet
+drone build create $REPO

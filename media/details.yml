@@ -1,9 +1,12 @@
 ---
 namespace: media
-chart: bananaspliff/emby
-release: media
-valuesFile: values/media.yml
-version: 0.1.0
-pre:
-  resources:
-    - resources/media-storage.yml
+releases:
+  - name: media
+    chart: emby
+    valuesFile: values.yml
+    url: https://bananaspliff.github.io/geek-charts
+    version: 0.1.0
+hooks:
+  preInstall:
+    - operation: apply
+      resource: k8s/storage.yml
