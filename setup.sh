@@ -1,17 +1,13 @@
 !/bin/sh
 
-# echo "Insert github client id"
-# read github_client_id
+echo "Insert github client id"
+read github_client_id
 
-# echo "Insert github client secret"
-# read github_secret
+echo "Insert github client secret"
+read github_secret
 
-# echo "Insert cloudflare api secret"
-# read cloudflare
-
-github_client_id="$1"
-github_secret="$2"
-cloudflare="$3"
+echo "Insert cloudflare api secret"
+read cloudflare
 
 mkdir -p .tmp
 
@@ -23,11 +19,8 @@ docker run -ti --rm -v `pwd`/.tmp:/tmp \
   certonly --dns-cloudflare \
   --dns-cloudflare-credentials /tmp/cloudflare \
   --dns-cloudflare-propagation-seconds 60 \
-  --agree-tos \
-  -m tiagoposse@gmail.com \
-  -n \
-  -d tiagoposse.com \
-  -d "*.tiagoposse.com"
+  -n --agree-tos -m tiagoposse@gmail.com \
+  -d `yq e '.cluster.ingress.domains | join(" -d ")' cluster_details.yml`
 
 kubectl create secret tls tiagoposse-ingress -n `yq r registry/details.yml "namespace"` \
     --key=.tmp/tiagoposse.com/privkey.pem --cert=.tmp/tiagoposse.com/fullchain.pem
@@ -47,12 +40,12 @@ helm install vault `yq e ".chart" vault/details.yml` -f vault/values.yml \
   -n `yq e ".namespace" vault/details.yml` --create-namespace
 
 git clone https://github.com/tiagoposse/custom-charts.git .tmp/custom-charts
-git clone https://github.com/tiagoposse/helper-images.git .tmp/helper-images
+git clone https://github.com/tiagoposse/cluster-droid.git .tmp/cluster-droid
 git clone https://github.com/tiagoposse/drone-monorepo.git .tmp/drone-monorepo
 docker build -t cluster-droid .tmp/helper-images/cluster-droid
 
-VERSION=$(cat .tmp/helper-images/cluster-droid/VERSION)
-docker buildx build -t cluster-droid:$VERSION .tmp/helper-images/cluster-droid \
+VERSION=$(cat .tmp/cluster-droid/VERSION)
+docker buildx build -t cluster-droid:$VERSION ./cluster-droid \
   --platform linux/arm64 \
   --build-arg=VAULT_VERSION=1.6.1 \
   --build-arg=HELM_VERSION=3.4.2 \

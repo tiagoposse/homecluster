@@ -6,3 +6,8 @@ releases:
     url: https://charts.helm.sh/stable
     valuesFile: values.yml
     version: 1.9.6
+
+
+vault:
+  secrets:
+    - path: kv/registry/htpasswd

@@ -4,9 +4,9 @@ include_pipeline: .drone.deploy.yml
 environment:
   DETAILS_PATH: dashboard/details.yml
 
-# trigger:
-#   paths:
-#   - dashboard/**/*.yml
+trigger:
+  paths:
+  - dashboard/**/*.yml
 ---
 name: drone
 include_pipeline: .drone.deploy.yml

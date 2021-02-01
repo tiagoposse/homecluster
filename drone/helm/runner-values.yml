@@ -39,4 +39,5 @@ env:
   DRONE_RPC_PROTO: https
   DRONE_NAMESPACE_DEFAULT: builds
   DRONE_SERVICE_ACCOUNT_DEFAULT: drone-build-sa
+  DRONE_RUNNER_MAX_PROCS: 10
   SSL_CERT_FILE: /var/run/autocert.step.sm/root.crt

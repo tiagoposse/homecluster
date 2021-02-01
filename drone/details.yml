@@ -1,22 +1,25 @@
 ---
- # url: https://charts.tiagoposse.com/charts
+ # 
 namespace: drone
 releases:
-  - chart: /custom/drone
+  - chart: drone
+    url: https://charts.tiagoposse.com/charts
     name: drone
-    valuesFile: drone-values.yml
+    valuesFile: helm/drone-values.yml
     version: 0.1.7
 
-  - chart: /custom/drone-runner-kube
+  - chart: drone-runner-kube
+    url: https://charts.tiagoposse.com/charts
     name: drone-runner
     namespace: builds
-    valuesFile: runner-values.yml
+    valuesFile: helm/runner-values.yml
     version: 0.1.4
   
-  - chart: /drone-monorepo/chart
+  - chart: drone-monorepo
+    url: https://charts.tiagoposse.com/charts
     name: drone-monorepo
-    valuesFile: mono-values.yml
-    version: 0.1.0
+    valuesFile: helm/mono-values.yml
+    version: 0.4.8
 hooks:
   preInstall:
     - operation: apply

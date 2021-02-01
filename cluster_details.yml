@@ -1,4 +1,18 @@
-cluster_ingress_secret: tiagoposse-ingress
-cluster_ingress_domains: tiagoposse.com,*.tiagoposse.com
+cluster:
+  ingress:
+    secret: tiagoposse-ingress
+    domains:
+      - tiagoposse.com
+      - "*.tiagoposse.com"
 
-cluster_kubernetes_version: 1.18.10
+  versions:
+    kubernetes: 1.18.10
+
+  ssh_user: tposse
+
+nodes:
+  masters:
+    - 192.168.178.48
+  workers:
+    - 192.168.178.49
+    - 192.168.178.50

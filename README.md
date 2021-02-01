@@ -1,6 +1,10 @@
 
+Values and definitions 
+
+
 # details.yml
 
+```
 namespace: namespace for release
 release: release name
 chart: chart ref without (/)
@@ -15,3 +19,4 @@ hooks: # {}
     - resource: vault/resources/setup_certificate.sh
       operation: execute
 vault: location of vault file to process (used by vault-droid)
+```

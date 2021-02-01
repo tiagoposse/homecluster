@@ -1,5 +1,8 @@
 kind: pipeline
 type: kubernetes
+platform:
+  os: linux
+  arch: arm64
 
 metadata:
   annotations:
@@ -12,9 +15,6 @@ metadata:
     vault.hashicorp.com/agent-pre-populate-only: "true"
     vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
 
-platform:
-  os: linux
-  arch: arm64
 
 steps:
 - name: Create vault resources and deploy

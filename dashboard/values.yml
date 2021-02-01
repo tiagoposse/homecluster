@@ -18,17 +18,17 @@ ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.class: nginx
-    kubernetes.io/tls-acme: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/connection-proxy-header: keep-alive
-    cert-manager.io/cluster-issuer: letsencrypt-issuer
+    autocert.step.sm/name: dashboard
+    autocert.step.sm/sans: dashboard.tools.svc.cluster.local
+    autocert.step.sm/init-first: "true"
+    autocert.step.sm/duration: "4380h"
 
   paths:
     - /
   hosts:
     - dashboard.tiagoposse.com
-    - dashboard.192.168.178.48.nip.io
 
   tls:
     - secretName: dashboard-ingress-tls

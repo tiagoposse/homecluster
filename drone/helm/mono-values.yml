@@ -3,6 +3,7 @@ image:
   repository: registry.tiagoposse.com/drone-monorepo
 
 github_token_path: /vault/secrets/token
+default_platform: linux-arm64
 
 extraEnv:
   TLS_CERT_PATH: /var/run/autocert.step.sm/site.crt
