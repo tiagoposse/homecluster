@@ -26,8 +26,8 @@ step-certificates:
 
 autocert:
   image:
-    repository: registry.tiagoposse.com/autocert-controller
-    tag: 0.1.1
+    repository: registry.tiagoposse.com/controller
+    tag: dev2
     pullPolicy: Always
 
   certLifetime: 87600h
@@ -40,6 +40,6 @@ bootstrapper:
 
 renewer:
   image:
-    repository: registry.tiagoposse.com/autocert-renewer
+    repository: fastlorenzo/autocert-renewer
     tag: latest
     pullPolicy: IfNotPresent

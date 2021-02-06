@@ -1,8 +1,0 @@
----
-namespace: tools
-releases:
-- name: museum
-  chart: chartmuseum
-  valuesFile: values.yml
-  version: 2.14.2
-  url: https://chartmuseum.github.io/charts

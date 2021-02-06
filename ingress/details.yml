@@ -1,8 +1,0 @@
----
-namespace: ingress
-releases:
-- chart: ingress-nginx
-  valuesFile: values.yml
-  name: ingress
-  version: 3.19.0
-  url: https://kubernetes.github.io/ingress-nginx

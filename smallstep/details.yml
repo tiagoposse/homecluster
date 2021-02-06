@@ -1,7 +1,0 @@
-namespace: tools
-releases:
-  - name: zmallstep
-    chart: autocert
-    url: https://smallstep.github.io/helm-charts/
-    valuesFile: values.yml
-    version: 1.12.3

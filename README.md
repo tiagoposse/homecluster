@@ -1,22 +1,14 @@
 
-Values and definitions 
+Terraform scripts to deploy the components of my home cluster. The cluster includes:
+- Vault as a secrets management system
+- Drone.io as CI/CD
+- Chartmuseum as helm repo
+- Certmanager to get TLS certificates
+- Autocert for in-cluster certificate management.
 
+For the first start please run `setup-tf.sh`.
 
-# details.yml
-
-```
-namespace: namespace for release
-release: release name
-chart: chart ref without (/)
-url: url of the chart
-valuesFile: location of custom values.yml for this release
-version: chart version
-hooks: # {}
-  preInstall: # []
-    - resource: vault/k8s/auth-setup.yml
-      operation: apply
-  postInstall: []
-    - resource: vault/resources/setup_certificate.sh
-      operation: execute
-vault: location of vault file to process (used by vault-droid)
-```
+This repo depends on:
+- [tiagoposse/helper-images](https://github.com/tiagoposse/helper-images.git)
+- [tiagoposse/custom-charts](https://github.com/tiagoposse/custom-charts.git)
+- [tiagoposse/autocert](https://github.com/tiagoposse/autocert.git)

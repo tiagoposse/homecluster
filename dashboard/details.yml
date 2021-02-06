@@ -1,8 +1,0 @@
----
-namespace: tools
-releases:
-- name: dashboard
-  chart: kubernetes-dashboard
-  url: https://kubernetes.github.io/dashboard
-  valuesFile: dashboard/values.yml
-  version: 3.0.0

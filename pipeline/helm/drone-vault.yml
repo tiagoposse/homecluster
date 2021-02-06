@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: drone-vault
+  name: drone-vault
+  namespace: drone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drone-vault
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: drone-vault
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
+        vault.hashicorp.com/role: drone-vault
+        vault.hashicorp.com/agent-inject-secret-env-secrets: kv/data/drone/vault
+        vault.hashicorp.com/agent-inject-template-env-secrets: |
+          {{- with secret "kv/data/drone/vault" -}}
+          VAULT_APPROLE_ID={{ .Data.data.role_id }}
+          VAULT_APPROLE_SECRET={{ .Data.data.secret_id }}
+          {{- end -}}
+          {{- with secret "kv/data/drone/rpc" }}
+          DRONE_SECRET={{ .Data.data.secret }}
+          {{- end -}}
+        autocert.step.sm/init-first: "true"
+        autocert.step.sm/name: drone-vault
+        autocert.step.sm/sans: drone-vault.drone.svc,drone-vault.drone.svc.cluster.local
+        autocert.step.sm/duration: 4380h
+    spec:
+      serviceAccountName: drone-vault
+      serviceAccount: drone-vault
+      containers:
+        - image: registry.tiagoposse.com/drone-vault:1.2
+          imagePullPolicy: Always
+          name: vault
+          command:
+            - sh
+            - -c
+            - cp /vault/secrets/env-secrets .env && /bin/drone-vault
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          ports:
+            - name: vault
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: DRONE_DEBUG
+              value: "false"
+            - name: VAULT_ADDR
+              value: https://vault.vault.svc:8200
+            - name: VAULT_CACERT
+              value: /var/run/autocert.step.sm/root.crt
+            - name: VAULT_AUTH_TYPE
+              value: "approle"
+            - name: VAULT_TOKEN_TTL
+              value: "48h"
+            - name: VAULT_TOKEN_RENEWAL
+              value: "24h"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: drone-vault
+    meta.helm.sh/release-namespace: drone
+  name: drone-vault
+  namespace: drone
+spec:
+  ports:
+  - name: vault
+    port: 3000
+    protocol: TCP
+    targetPort: vault
+  selector:
+    app: drone-vault
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drone-vault
+  namespace: drone

@@ -1,0 +1,80 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: staging-issuer
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    meta.helm.sh/release-name: vault
+    meta.helm.sh/release-namespace: vault
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/connection-proxy-header: keep-alive
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  creationTimestamp: "2021-02-09T13:20:51Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: vault
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: vault
+    helm.sh/chart: vault-0.8.0
+  managedFields:
+  - apiVersion: networking.k8s.io/v1beta1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:cert-manager.io/cluster-issuer: {}
+          f:kubernetes.io/ingress.class: {}
+          f:kubernetes.io/tls-acme: {}
+          f:meta.helm.sh/release-name: {}
+          f:meta.helm.sh/release-namespace: {}
+          f:nginx.ingress.kubernetes.io/backend-protocol: {}
+          f:nginx.ingress.kubernetes.io/connection-proxy-header: {}
+          f:nginx.ingress.kubernetes.io/rewrite-target: {}
+          f:nginx.ingress.kubernetes.io/ssl-redirect: {}
+        f:labels:
+          .: {}
+          f:app.kubernetes.io/instance: {}
+          f:app.kubernetes.io/managed-by: {}
+          f:app.kubernetes.io/name: {}
+          f:helm.sh/chart: {}
+      f:spec:
+        f:rules: {}
+        f:tls: {}
+    manager: Go-http-client
+    operation: Update
+    time: "2021-02-09T13:20:51Z"
+  - apiVersion: networking.k8s.io/v1beta1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:status:
+        f:loadBalancer:
+          f:ingress: {}
+    manager: nginx-ingress-controller
+    operation: Update
+    time: "2021-02-09T13:21:34Z"
+  name: vault
+  namespace: vault
+  resourceVersion: "15872448"
+  selfLink: /apis/extensions/v1beta1/namespaces/vault/ingresses/vault
+  uid: d52c1b39-fc76-423a-9702-761123153140
+spec:
+  rules:
+  - host: vault.tiagoposse.com
+    http:
+      paths:
+      - backend:
+          serviceName: vault-active
+          servicePort: 8200
+        path: /
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - vault.tiagoposse.com
+    secretName: vault-tls
+status:
+  loadBalancer:
+    ingress:
+    - ip: 10.43.48.143
