@@ -1,8 +1,24 @@
+module "vault" {
+  vault = {
+    policies = local.policies
+    secrets = []
+    roles = local.roles
+  }
 
-resource "kubernetes_cron_job" "backup-job" {
+  source = "../../templates/vault"
+}
+
+resource "kubernetes_service_account" "vault-backup" {
   metadata {
-    name = "vault-backup"
-    namespace = local.release.namespace
+    name = local.job_name
+    namespace = var.release.namespace
+  }
+}
+
+resource "kubernetes_cron_job" "vault-job" {
+  metadata {
+    name = local.job_name
+    namespace = var.release.namespace
   }
 
   spec {
@@ -12,11 +28,13 @@ resource "kubernetes_cron_job" "backup-job" {
     starting_deadline_seconds     = 10
     successful_jobs_history_limit = 5
 
+
     job_template {
       metadata {}
       spec {
         backoff_limit              = 2
         ttl_seconds_after_finished = 10
+          
 
         template {
           metadata {
@@ -33,14 +51,36 @@ resource "kubernetes_cron_job" "backup-job" {
             }
           }
           spec {
+            service_account_name = kubernetes_service_account.vault-backup.metadata.0.name
+
             container {
               name    = "backup"
-              image   = "vault"
+              image   = "curlimages/curl"
               command = [
                 "/bin/sh",
                 "-c",
-                "echo Creating backup $BACKUP_TARGET/vault-$(date +\"%d-%m-%Y-%H-%M\").snap; mkdir -p $BACKUP_TARGET; vault operator raft snapshot save > $BACKUP_TARGET/vault-$(date +\"%d-%m-%Y-%H-%M\").snap; echo FINISHED;"
+                "echo Creating backup $BACKUP_TARGET/vault-$(date +\"%d-%m-%Y-%H-%M\").snap; mkdir -p $BACKUP_TARGET; curl --cacert $VAULT_CACERT --header \"X-Vault-Token: $(cat $VAULT_TOKEN)\" $VAULT_ADDR/v1/sys/storage/raft/snapshot > $BACKUP_TARGET/vault-$(date +\"%d-%m-%Y-%H-%M\").snap; echo FINISHED;"
               ]
+
+              env {
+                name = "BACKUP_TARGET"
+                value = "/backups"
+              }
+
+              env {
+                name = "VAULT_ADDR"
+                value = "https://vault.vault.svc:8200"
+              }
+
+              env {
+                name = "VAULT_CACERT"
+                value = "/var/run/autocert.step.sm/root.crt"
+              }
+
+              env {
+                name = "VAULT_TOKEN"
+                value = "/vault/secrets/token"
+              }
 
               volume_mount {
                 name = "backup"
@@ -51,7 +91,7 @@ resource "kubernetes_cron_job" "backup-job" {
             volume {
               name = "backup"
               persistent_volume_claim {
-                claim_name = "vault-backup"
+                claim_name = "vault-backup-pvc"
               }
             }
           }
@@ -61,10 +101,10 @@ resource "kubernetes_cron_job" "backup-job" {
   }
 }
 
-resource "kubernetes_persistent_volume_claim" "backup-pvc" {
+resource "kubernetes_persistent_volume_claim" "vault-backup-pvc" {
   metadata {
     name = "vault-backup-pvc"
-    namespace = local.release.namespace
+    namespace = var.release.namespace
   }
 
   spec {
@@ -83,10 +123,11 @@ resource "kubernetes_persistent_volume_claim" "backup-pvc" {
 }
 
 
-resource "kubernetes_persistent_volume" "backup-pv" {
+resource "kubernetes_persistent_volume" "vault-backup-pv" {
   metadata {
     name = "backups-vault"
   }
+
   spec {
     capacity = {
       storage = "20Gi"

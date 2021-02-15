@@ -56,6 +56,9 @@ path "kv/data/tf-state" {
 path "kv/data/drone/vault" {
   capabilities = ["read"]
 }
+path "kv/data/registry" {
+  capabilities = ["read"]
+}
 EOT
 
   drone-runner = <<EOT

@@ -19,8 +19,5 @@ controller:
   extraArgs:
     default-ssl-certificate: "ingress/tiagoposse-ingress"
 
-  tcp:
-    9777: "media/kodi-svc:9777"
-
 rbac:
   create: true

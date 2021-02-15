@@ -1,11 +1,15 @@
 ---
 kind: pipeline
 type: kubernetes
-name: Deploy certmanager
+name: Deploy homecluster
 
 platform:
   os: linux
   arch: arm64
+
+trigger:
+  branch:
+    - main
 
 metadata:
   annotations:
@@ -37,190 +41,133 @@ environment:
   VAULT_ADDR: https://vault.vault.svc:8200
   VAULT_CACERT: /var/run/autocert.step.sm/root.crt
 
+step_tasks: &step_tasks
+  depends_on:
+    - vault-auth
+  image: registry.tiagoposse.com/terraform:0.14.6
+  commands:
+    - export VAULT_TOKEN=$$(cat .vault-token)
+    - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
+    - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
+    - terraform -chdir=$$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
+    - terraform -chdir=$$APP workspace select $$APP || terraform -chdir=$$APP workspace new $$APP
+    - terraform -chdir=$$APP plan -out=tf.plan
+    - terraform -chdir=$$APP apply tf.plan
+
+
 steps:
-- name: vault-auth
-  image: curlimages/curl
-  commands:
-  - "curl --cacert /var/run/autocert.step.sm/root.crt -H 'Content-Type: application/json' --data '{\"role_id\":\"'\"$$(cat /vault/secrets/role_id)\"'\",\"secret_id\":\"'\"$$(cat /vault/secrets/secret_id)\"'\"}' https://vault.vault.svc:8200/v1/auth/approle/login | sed -E 's/.+client_token\":\"([a-zA-Z0-9.]+)\".+/\\1/g' > .vault-token"
+  - name: vault-auth
+    image: curlimages/curl
+    commands:
+      - |
+        cat <<EOT > /tmp/config.json
+        {
+          "role_id":"$$(cat /vault/secrets/role_id)",
+          "secret_id":"$$(cat /vault/secrets/secret_id)"
+        }
+        EOT
+      - >
+        curl --cacert /var/run/autocert.step.sm/root.crt
+        -H 'Content-Type: application/json'
+        --data-binary /tmp/config.json
+        https://vault.vault.svc:8200/v1/auth/approle/login | sed -E 's/.+client_token":"([a-zA-Z0-9.]+)".+/\1/g' > .vault-token
 
-- name: certmanager
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=certmanager
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - certmanager/**/*
 
-- name: smallstep
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=smallstep
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - smallstep/**/*
+  - <<: *step_tasks
+    name: certmanager
+    environment:
+      APP: certmanager
+    when:
+      paths:
+      - certmanager/**/*
 
-- name: dashboard
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=dashboard
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - dashboard/**/*
+  - <<: *step_tasks
+    name: smallstep
+    environment:
+      APP: smallstep
+    when:
+      paths:
+      - smallstep/**/*
 
-- name: pipeline
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=pipeline
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - pipeline/**/*
+  - <<: *step_tasks
+    name: dashboard
+    environment:
+      APP: dashboard
+    when:
+      paths:
+      - dashboard/**/*
 
-- name: ingress
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=ingress
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - ingress/**/*
+  - <<: *step_tasks
+    name: pipeline
+    environment:
+      APP: pipeline
+    when:
+      paths:
+      - pipeline/**/*
 
-- name: museum
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=museum
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - museum/**/*
+  - <<: *step_tasks
+    name: ingress
+    environment:
+      APP: ingress
+    when:
+      paths:
+      - ingress/**/*
 
-- name: media
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=media
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - media/**/*
+  - <<: *step_tasks
+    name: museum
+    environment:
+      APP: museum
+    when:
+      paths:
+      - museum/**/*
 
-- name: registry
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=registry
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - registry/**/*
+  - <<: *step_tasks
+    name: media
+    environment:
+      APP: media
+    when:
+      paths:
+      - media/**/*
 
-- name: secrets
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=secrets
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - secrets/**/*
+  - <<: *step_tasks
+    name: registry
+    environment:
+      APP: registry
+    when:
+      paths:
+      - registry/**/*
 
-- name: dns
-  image: registry.tiagoposse.com/terraform:0.14.6
-  commands:
-  - export VAULT_TOKEN=$$(cat .vault-token)
-  - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-  - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-  - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-  - export APP=dns
-  - terraform -chdir=$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-  - terraform -chdir=$APP workspace select $APP || terraform -chdir=$APP workspace new $APP
-  - terraform -chdir=$APP plan -out=tf.plan
-  - terraform -chdir=$APP apply tf.plan
-  depends_on:
-    - vault-auth
-  when:
-    paths:
-    - dns/**/*
+  - <<: *step_tasks
+    name: secrets
+    environment:
+      APP: secrets
+    when:
+      paths:
+      - secrets/**/*
+
+  - <<: *step_tasks
+    name: dns
+    environment:
+      APP: dns
+    when:
+      paths:
+      - dns/**/*
+
+  - <<: *step_tasks
+    name: backups
+    environment:
+      APP: backups
+    when:
+      paths:
+      - backups/**/*
+
+  - <<: *step_tasks
+    name: psono
+    environment:
+      APP: psono
+    when:
+      paths:
+      - psono/**/*
 
 ...

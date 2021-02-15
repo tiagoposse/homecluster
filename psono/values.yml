@@ -10,8 +10,14 @@ ingress:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/use-regex: "true"
+    cert-manager.io/cluster-issuer: cluster-issuer
+    kubernetes.io/tls-acme: "true"
   hosts:
     - host: psono.tiagoposse.com
+  tls:
+    - hosts:
+        - psono.tiagoposse.com
+      secretName: psono-tls
 
 server:
   enabled: true
@@ -56,15 +62,13 @@ server:
     PSONO_DATABASES_DEFAULT_HOST: psono-database.psono.svc
 
     PSONO_HOST_URL: 'https://psono.tiagoposse.com/server'
-    PSONO_DEBUG: TRUE
+    PSONO_DEBUG: True
     PSONO_ALLOWED_HOSTS: psono.tiagoposse.com
     PSONO_MANAGEMENT_ENABLED: True
     PSONO_FILESERVER_HANDLER_ENABLED: False
     PSONO_FILES_ENABLED: False
-    PSONO_ALLOW_USER_SEARCH_BY_USERNAME_PARTIAL: False
-    PSONO_ALLOW_USER_SEARCH_BY_EMAIL: false
     PSONO_ALLOW_REGISTRATION: True
-    PSONO_REGISTRATION_EMAIL_FILTER: "tiago@psono.tiagoposse.com,nadine@psono.tiagoposse.com"
+    PSONO_REGISTRATION_EMAIL_FILTER: "gmail.com,gmx.at"
     PSONO_ENFORCE_MATCHING_USERNAME_AND_EMAIL: False
     PSONO_ALLOWED_DOMAINS: psono.tiagoposse.com
     PSONO_EMAIL_FROM: 'psono@tiagoposse.com'

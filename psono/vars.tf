@@ -4,7 +4,7 @@ locals {
     name       = "psono"
     repository = "https://charts.tiagoposse.com"
     chart      = "psono"
-    version    = "0.2.0-rc4"
+    version    = "0.2.0"
     namespace  = "psono"
     values = [
       file("values.yml")

@@ -1,4 +1,6 @@
 
+fullnameOverride: registry
+
 ingress:
   enabled: true
   path: /
@@ -17,6 +19,20 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/whitelist-source-range: "192.168.178.1/24,10.42.0.1/16"
+
+
+podAnnotations:
+  autocert.step.sm/init-first: "true"
+  autocert.step.sm/name: registry
+  autocert.step.sm/sans: registry.tools.svc,registry.tools.svc.cluster.local
+  autocert.step.sm/duration: 4380h
+
+configData:
+  http:
+    tls:
+      certificate: /var/run/autocert.step.sm/site.crt
+      key: /var/run/autocert.step.sm/site.key
 
 service:
   port: 5000
