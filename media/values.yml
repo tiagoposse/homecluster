@@ -1,3 +1,4 @@
+fullnameOverride: plex
 
 image:
   repository: linuxserver/plex
@@ -8,7 +9,7 @@ kubePlex:
   enabled: false
 
 # Override this with the plex claim token from plex.tv/claim
-claimToken: "claim-WYjEtnR7FKD5VZxYCzkP"
+claimToken: claim-yxahX3s_aHsua1hqtBXb
 
 # Set the timezone of the plex server
 timezone: Europe/Vienna

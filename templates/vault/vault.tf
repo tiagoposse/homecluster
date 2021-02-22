@@ -25,7 +25,9 @@ resource "vault_generic_secret" "secrets" {
 
   path = each.value.path
 
-  data_json = jsonencode(each.value.values)
+  nested_block {
+    data_json = jsonencode(each.value.values)
+  }
   lifecycle {
     ignore_changes = [data_json]
   }

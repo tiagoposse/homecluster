@@ -62,21 +62,33 @@ EOT
 
 variable "secret_key" {
   default = ""
+
+  sensitive = true
 }
 variable "activation_link_secret" {
   default = ""
+
+  sensitive = true
 }
 variable "db_secret" {
   default = ""
+
+  sensitive = true
 }
 variable "email_secret_salt" {
   default = ""
+
+  sensitive = true
 }
 variable "private_key" {
   default = ""
+
+  sensitive = true
 }
 variable "public_key" {
   default = ""
+
+  sensitive = true
 }
 
 resource "random_password" "db" {

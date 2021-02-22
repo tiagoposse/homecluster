@@ -5,11 +5,11 @@ locals {
       path = "/nas/mediacenter/data"
     }
     plex-config = {
-      size = "300Gi"
+      size = "10Gi"
       path = "/nas/mediacenter/config"
     }
     plex-transcode = {
-      size = "300Gi"
+      size = "200Gi"
       path = "/nas/mediacenter/transcode"
     }
   }

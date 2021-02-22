@@ -148,13 +148,21 @@ resource "random_password" "rpc" {
 
 variable "github_token" {
   default = ""
+
+  sensitive = true
 }
 variable "github_client_id" {
   default = ""
+
+  sensitive = true
 }
 variable "github_client_secret" {
   default = ""
+
+  sensitive = true
 }
 variable "tf-state" {
   default = ""
+
+  sensitive = true
 }

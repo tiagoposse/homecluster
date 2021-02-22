@@ -21,8 +21,11 @@ resource "vault_mount" "secrets" {
 resource "vault_kubernetes_auth_backend_config" "config" {
   backend = vault_auth_backend.kubernetes.path
   kubernetes_host = "https://192.168.178.48:6443"
-  kubernetes_ca_cert = data.kubernetes_secret.sa.data["ca.crt"]
-  token_reviewer_jwt = data.kubernetes_secret.sa.data.token
+
+  nested_block {
+    kubernetes_ca_cert = data.kubernetes_secret.sa.data["ca.crt"]
+    token_reviewer_jwt = data.kubernetes_secret.sa.data.token
+  }
 }
 
 data "kubernetes_service_account" "vault-sa" {

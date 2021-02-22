@@ -6,6 +6,8 @@ resource "helm_release" "media" {
   version    = local.version
   namespace  = local.namespace
   values     = local.values
+
+  depends_on = [kubernetes_persistent_volume_claim.plex-pvc, kubernetes_persistent_volume.plex-pv]
 }
 
 resource "kubernetes_namespace" "media" {
