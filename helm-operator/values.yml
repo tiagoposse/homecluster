@@ -1,0 +1,29 @@
+fullnameOverride: helm-operator
+
+image:
+  repository: docker.io/fluxcd/helm-operator
+  tag: 1.2.0
+  pullPolicy: IfNotPresent
+  pullSecret:
+
+workers: 2
+
+helm:
+  versions: "v3"
+
+configureRepositories:
+  enable: true
+  volumeName: repositories-yaml
+  secretName: flux-helm-repositories
+  cacheVolumeName: repositories-cache
+  repositories:
+    - name: custom-charts
+      url: https://museum-chartmuseum.tools.svc:8080
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 300Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

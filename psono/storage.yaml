@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: backups-psono
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: psono-backup-pvc
+    namespace: psono
+  hostPath:
+    path: /nas/backups/psono
+    type: ""
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: k3s.io/hostname
+          operator: In
+          values:
+          - worker1
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path-retain
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: psono-backup-pvc
+  namespace: psono
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: local-path-retain
+  volumeMode: Filesystem
+  volumeName: backups-psono
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: psono-database
+  namespace: psono
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path-retain
+  volumeMode: Filesystem

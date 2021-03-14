@@ -1,0 +1,65 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: registry
+  namespace: tools
+spec:
+  chart:
+    repository: https://charts.helm.sh/stable
+    name: docker-registry
+    version: 1.9.6
+    values:
+      fullnameOverride: registry
+
+      ingress:
+        enabled: true
+        path: /
+        # Used to create an Ingress record.
+        hosts:
+          - registry.tiagoposse.com
+        tls:
+          - hosts:
+            - registry.tiagoposse.com
+            secretName: registry-tls
+
+        annotations:
+          kubernetes.io/ingress.class: nginx
+          kubernetes.io/tls-acme: "true"
+          cert-manager.io/cluster-issuer: "cluster-issuer"
+          nginx.ingress.kubernetes.io/proxy-body-size: "0"
+          nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+          nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+          nginx.ingress.kubernetes.io/whitelist-source-range: "192.168.178.1/24,10.42.0.1/16"
+
+
+      podAnnotations:
+        autocert.step.sm/init-first: "true"
+        autocert.step.sm/name: registry
+        autocert.step.sm/sans: registry.tools.svc,registry.tools.svc.cluster.local
+        autocert.step.sm/duration: 4380h
+
+      configData:
+        http:
+          tls:
+            certificate: /var/run/autocert.step.sm/site.crt
+            key: /var/run/autocert.step.sm/site.key
+
+      service:
+        port: 5000
+
+      resources: {}
+        # We usually recommend not to specify default resources and to leave this as a conscious
+        # choice for the user. This also increases chances charts run on environments with little
+        # resources, such as Minikube. If you do want to specify resources, uncomment the following
+        # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+        # limits:
+        #  cpu: 100m
+        #  memory: 128Mi
+        # requests:
+        #  cpu: 100m
+        #  memory: 128Mi
+      persistence:
+        accessMode: 'ReadWriteOnce'
+        enabled: true
+        size: 4Gi
+        storageClass: local-path-retain

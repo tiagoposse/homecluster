@@ -1,0 +1,211 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: psono
+  namespace: psono
+spec:
+  chart:
+    repository: https://charts.tiagoposse.com
+    name: psono
+    version: 0.2.0
+
+    values:
+      host: psono.tiagoposse.com
+
+      imagePullSecrets: []
+      nameOverride: psono
+      fullnameOverride: psono
+
+      ingress:
+        enabled: true
+        annotations:
+          kubernetes.io/ingress.class: nginx
+          nginx.ingress.kubernetes.io/rewrite-target: /$1
+          nginx.ingress.kubernetes.io/use-regex: "true"
+          cert-manager.io/cluster-issuer: cluster-issuer
+          kubernetes.io/tls-acme: "true"
+        hosts:
+          - host: psono.tiagoposse.com
+        tls:
+          - hosts:
+              - psono.tiagoposse.com
+            secretName: psono-tls
+
+      server:
+        enabled: true
+        replicas: 1
+        image:
+          repository: alexr4535/psono-server-aarch64
+          pullPolicy: IfNotPresent
+          tag: latest
+
+        service:
+          type: ClusterIP
+          port: 10100
+
+        envFiles:
+          - /vault/secrets/credentials
+        
+        podAnnotations:
+          autocert.step.sm/init-first: "true"
+          autocert.step.sm/name: psono
+          autocert.step.sm/sans: psono-server.psono.svc,psono-server.psono.svc.cluster.local
+          autocert.step.sm/duration: 4380h
+          vault.hashicorp.com/agent-inject: "true"
+          vault.hashicorp.com/role: psono-server
+          vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
+          vault.hashicorp.com/agent-inject-secret-credentials: kv/data/psono/credentials,kv/data/psono/database
+          vault.hashicorp.com/agent-inject-template-credentials: |
+            {{- with secret "kv/data/psono/database" -}}
+            PSONO_DATABASES_DEFAULT_PASSWORD={{ .Data.data.password }}
+            {{- end -}}
+            {{- with secret "kv/data/psono/credentials" }}
+            PSONO_SECRET_KEY={{ .Data.data.secret_key }}
+            PSONO_ACTIVATION_LINK_SECRET={{ .Data.data.activation_link_secret }}
+            PSONO_DB_SECRET={{ .Data.data.db_secret }}
+            PSONO_EMAIL_SECRET_SALT='{{ .Data.data.email_secret_salt }}'
+            PSONO_PRIVATE_KEY={{ .Data.data.private_key }}
+            PSONO_PUBLIC_KEY={{ .Data.data.public_key }}
+            {{- end -}}
+
+        env:
+          PSONO_DATABASES_DEFAULT_NAME: psono
+          PSONO_DATABASES_DEFAULT_USER: psono
+          PSONO_DATABASES_DEFAULT_HOST: psono-database.psono.svc
+
+          PSONO_HOST_URL: 'https://psono.tiagoposse.com/server'
+          PSONO_DEBUG: True
+          PSONO_ALLOWED_HOSTS: psono.tiagoposse.com
+          PSONO_MANAGEMENT_ENABLED: True
+          PSONO_FILESERVER_HANDLER_ENABLED: False
+          PSONO_FILES_ENABLED: False
+          PSONO_ALLOW_REGISTRATION: True
+          PSONO_REGISTRATION_EMAIL_FILTER: "gmail.com,gmx.at"
+          PSONO_ENFORCE_MATCHING_USERNAME_AND_EMAIL: False
+          PSONO_ALLOWED_DOMAINS: psono.tiagoposse.com
+          PSONO_EMAIL_FROM: 'psono@tiagoposse.com'
+          PSONO_EMAIL_HOST: 'psono-mail.psono.svc'
+          PSONO_EMAIL_PORT: 587
+          PSONO_EMAIL_USE_TLS: False
+          PSONO_EMAIL_USE_SSL: False
+          PSONO_EMAIL_BACKEND: 'django.core.mail.backends.smtp.EmailBackend'
+
+      database:
+        persistence:
+          enabled: true
+          storageClass: "local-path-retain"
+          size: 10Gi
+        
+        env:
+          POSTGRES_PASSWORD_FILE: /vault/secrets/psql-password
+          POSTGRES_USER: psono
+          POSTGRES_DB: psono
+
+        podAnnotations:
+          autocert.step.sm/init-first: "true"
+          autocert.step.sm/name: psono-database
+          autocert.step.sm/sans: psono-database.psono.svc,psono-database.psono.svc.cluster.local
+          autocert.step.sm/duration: 4380h
+          vault.hashicorp.com/agent-inject: "true"
+          vault.hashicorp.com/role: psono-database
+          vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
+          vault.hashicorp.com/agent-inject-secret-psql-password: kv/data/psono/database
+          vault.hashicorp.com/agent-inject-template-psql-password: |
+            {{- with secret "kv/data/psono/database" -}}
+            {{ .Data.data.password }}
+            {{- end -}}
+
+      adminClient:
+        image:
+          repository: registry.tiagoposse.com/psono-admin-client
+          tag: latest
+
+        env:
+          PSONO_PORTAL_CONFIG_JSON: |
+            {
+              "backend_servers": [{
+                "title": "psono.pw",
+                "domain": "tiagoposse.com",
+                "url": "https://psono.tiagoposse.com/server"
+              }],
+              "base_url": "https://psono.tiagoposse.com/",
+              "allow_custom_server": true,
+              "allow_registration": true,
+              "allow_lost_password": true,
+              "disable_download_bar": false,
+              "authentication_methods": ["AUTHKEY"]
+            }
+
+      webclient:
+        image:
+          repository: alexr4535/psono-client-aarch64
+          tag: latest
+
+        env:
+          PSONO_WEBCLIENT_CONFIG_JSON: |
+            {
+              "backend_servers": [{
+                "title": "psono.posse",
+                "domain": "tiagoposse.com",
+                "url": "https://psono.tiagoposse.com/server"
+              }],
+              "base_url": "https://psono.tiagoposse.com/",
+              "allow_custom_server": true,
+              "allow_registration": true,
+              "allow_lost_password": true,
+              "disable_download_bar": false,
+              "authentication_methods": ["AUTHKEY"]
+            }
+
+      mail:
+        enabled: true
+        persistence:
+          enabled: false
+        
+        config:
+          general:
+            ALLOWED_SENDER_DOMAINS: tiagoposse.com
+
+      backup:
+        enabled: true
+        image:
+          repository: postgres
+          tag: latest
+          pullPolicy: IfNotPresent
+
+        schedule: "00 6 * * *"
+        startingDeadlineSeconds: 100
+        restartPolicy: OnFailure
+
+        podAnnotations:
+          autocert.step.sm/init-first: "true"
+          autocert.step.sm/bootstrapper-only: "true"
+          autocert.step.sm/name: psono-backup
+          autocert.step.sm/duration: 4380h
+          vault.hashicorp.com/agent-inject: "true"
+          vault.hashicorp.com/role: psono-database
+          vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
+          vault.hashicorp.com/agent-pre-populate-only: "true"
+          vault.hashicorp.com/agent-inject-secret-psql-password: kv/data/psono/database
+          vault.hashicorp.com/agent-inject-template-psql-password: |
+            {{- with secret "kv/data/psono/database" -}}
+            PGPASSWORD={{ .Data.data.password }}
+            {{- end -}}
+
+        extraVolumeMounts:
+          - name: backup
+            mountPath: /backups
+
+        extraVolumes:
+          - name: backup
+            persistentVolumeClaim:
+              claimName: psono-backup-pvc
+
+        envFiles:
+          - /vault/secrets/psql-password
+
+        env:
+          BACKUP_TARGET: /backups/
+          PGHOST: psono-database.psono.svc.cluster.local
+          PGUSER: psono
+          PGDATABASE: psono
