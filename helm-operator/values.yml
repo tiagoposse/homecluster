@@ -1,7 +1,7 @@
 fullnameOverride: helm-operator
 
 image:
-  repository: docker.io/fluxcd/helm-operator
+  repository: registry.tiagoposse.com/helm-operator
   tag: 1.2.0
   pullPolicy: IfNotPresent
   pullSecret:
@@ -12,7 +12,7 @@ helm:
   versions: "v3"
 
 configureRepositories:
-  enable: true
+  enable: false
   volumeName: repositories-yaml
   secretName: flux-helm-repositories
   cacheVolumeName: repositories-cache

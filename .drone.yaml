@@ -46,15 +46,7 @@ step_tasks: &step_tasks
     - vault-auth
   image: registry.tiagoposse.com/terraform:0.14.6
   commands:
-    - export VAULT_TOKEN=$$(cat .vault-token)
-    - export KUBE_HOST=https://$$KUBERNETES_SERVICE_HOST:$$KUBERNETES_SERVICE_PORT_HTTPS
-    - export KUBE_TOKEN=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-    - export KUBE_CLUSTER_CA_CERT_DATA=$$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-    - terraform -chdir=$$APP init -backend-config="conn_str=$$(cat /vault/secrets/tf-state)"
-    - terraform -chdir=$$APP workspace select $$APP || terraform -chdir=$$APP workspace new $$APP
-    - terraform -chdir=$$APP plan -out=tf.plan
-    - terraform -chdir=$$APP apply tf.plan
-
+    - kubectl apply -f $$(tr '\n' ' ' < $$APP/.deploy)
 
 steps:
   - name: vault-auth

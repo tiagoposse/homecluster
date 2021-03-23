@@ -1,0 +1,5 @@
+namespace.yml
+release.yml
+role.yml
+rolebinding.yml
+clusterrolebinding.yml

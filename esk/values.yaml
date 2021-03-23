@@ -1,0 +1,61 @@
+
+fullnameOverride: esk
+
+
+certificateGenerator:
+  enabled: true
+  autoApproveCertificate: true
+  image:
+    pullPolicy: Always
+
+injector:
+  enabled: true
+
+  replicaCount: 1
+
+  podAnnotations:
+    autocert.step.sm/init-first: "true"
+    autocert.step.sm/name: esk-injector.secretsplane.svc
+    autocert.step.sm/duration: 4380h
+    autocert.step.sm/bootstrapper-only: "true"
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: esk-injector
+    vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
+    vault.hashicorp.com/agent-inject-token: "true"
+
+  image:
+    repository: registry.tiagoposse.com/esk-injector
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 443
+
+operator:
+  image:
+    repository: registry.tiagoposse.com/esk-operator
+    pullPolicy: Always
+
+  podAnnotations:
+    autocert.step.sm/init-first: "true"
+    autocert.step.sm/name: esk
+    autocert.step.sm/sans: esk-operator.esk.svc,esk-operator.esk.svc.cluster.local
+    autocert.step.sm/duration: 4380h
+    autocert.step.sm/bootstrapper-only: "true"
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: esk-operator
+    vault.hashicorp.com/ca-cert: /var/run/autocert.step.sm/root.crt
+    vault.hashicorp.com/agent-inject-token: "true"
+
+backends:
+  vault:
+    enabled: true
+    address: https://vault.tiagoposse.com
+    token_path: /vault/secrets/token
+    ca_cert: /var/run/autocert.step.sm/root.crt
+
+
+init:
+  image:
+    repository: registry.tiagoposse.com/esk-init
+    pullPolicy: Always
